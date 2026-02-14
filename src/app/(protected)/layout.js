@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import UserNavbar from "@/components/UserNavbar";
 
 export default async function ProtectedLayout({ children }) {
   const session = await auth();
@@ -8,5 +9,10 @@ export default async function ProtectedLayout({ children }) {
     redirect("/sign-in");
   }
 
-  return <>{children}</>;
+  return (
+    <div className="min-h-screen bg-background">
+      <UserNavbar />
+      {children}
+    </div>
+  );
 }

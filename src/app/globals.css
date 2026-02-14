@@ -83,3 +83,17 @@ body {
   background: var(--border);
   border-radius: 3px;
 }
+
+/* ─── Cursor Pointer for Clickable Elements ──────────────── */
+button,
+a,
+[role="button"],
+select,
+input[type="submit"],
+input[type="button"],
+input[type="reset"],
+input[type="checkbox"],
+input[type="radio"],
+label[for] {
+  cursor: pointer;
+}
