@@ -5,15 +5,32 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "db:migrate": "npx prisma migrate dev",
+    "db:generate": "npx prisma generate",
+    "db:seed": "npx tsx prisma/seed.ts",
+    "db:studio": "npx prisma studio",
+    "db:reset": "npx prisma migrate reset",
+    "admin:list": "npx tsx scripts/admin.ts list",
+    "admin:add": "npx tsx scripts/admin.ts add",
+    "admin:delete": "npx tsx scripts/admin.ts delete",
+    "admin:update": "npx tsx scripts/admin.ts update"
   },
   "dependencies": {
+    "@auth/prisma-adapter": "^2.11.1",
+    "@prisma/client": "^7.4.0",
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^17.3.1",
+    "lucide-react": "^0.564.0",
     "next": "16.1.6",
+    "next-auth": "^5.0.0-beta.30",
+    "prisma": "^7.4.0",
     "react": "19.2.3",
     "react-dom": "19.2.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "tailwindcss": "^4"
+    "tailwindcss": "^4",
+    "tsx": "^4.21.0"
   }
 }
