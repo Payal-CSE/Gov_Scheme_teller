@@ -7,6 +7,7 @@ import {
   Users,
   FileText,
   Shield,
+  ArrowLeft,
 } from "lucide-react";
 import LogoutButton from "@/components/LogoutButton";
 
@@ -62,7 +63,14 @@ export default function AdminSidebar() {
       </nav>
 
       {/* Bottom section */}
-      <div className="border-t border-border p-3">
+      <div className="border-t border-border p-3 space-y-1">
+        <Link
+          href="/dashboard"
+          className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to App
+        </Link>
         <LogoutButton variant="sidebar" redirectTo="/sign-in" />
       </div>
     </aside>
