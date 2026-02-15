@@ -27,6 +27,7 @@ export default async function DashboardPage() {
         state: true,
         category: true,
         occupation: true,
+        eligibilityVector: true,
       },
     }),
   ]);
@@ -97,7 +98,9 @@ export default async function DashboardPage() {
                 Matched Schemes
               </h3>
               <p className="mt-1 text-lg font-bold text-card-foreground">
-                {user?.onboardingCompleted ? "Available" : "--"}
+                {user?.onboardingCompleted
+                  ? (user?.eligibilityVector?.matchedSchemeIds?.length ?? 0)
+                  : "--"}
               </p>
             </div>
           </div>

@@ -11,6 +11,7 @@ function SignInForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  const registered = searchParams.get("registered") === "true";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -50,6 +51,12 @@ function SignInForm() {
           Sign in to your account
         </p>
       </div>
+
+      {registered && (
+        <div className="mb-4 rounded-md bg-success/10 px-4 py-3 text-sm text-success">
+          Account created successfully! Sign in to continue.
+        </div>
+      )}
 
       {error && (
         <div className="mb-4 rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive">

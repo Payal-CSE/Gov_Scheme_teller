@@ -2,8 +2,8 @@ import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import {
-  buildEligibilityVector,
   deriveIncomeBracket,
+  generateAndStoreEligibility,
 } from "@/lib/eligibility";
 
 export async function POST(req) {
@@ -30,6 +30,14 @@ export async function POST(req) {
       isMinority,
     } = body;
 
+    // Basic validation — require at least date of birth and gender
+    if (!dateOfBirth || !gender) {
+      return NextResponse.json(
+        { error: "Date of birth and gender are required." },
+        { status: 400 }
+      );
+    }
+
     const updateData = {
       onboardingCompleted: true,
       dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
@@ -48,21 +56,21 @@ export async function POST(req) {
       ),
     };
 
-    const updatedUser = await prisma.user.update({
+    await prisma.user.update({
       where: { id: session.user.id },
       data: updateData,
     });
 
-    // Build and store eligibility vector
-    const vector = buildEligibilityVector(updatedUser);
-
-    await prisma.user.update({
-      where: { id: session.user.id },
-      data: { eligibilityVector: vector },
-    });
+    // Run full eligibility engine — builds vector AND matches schemes
+    const { matchedSchemeIds } = await generateAndStoreEligibility(
+      session.user.id
+    );
 
     return NextResponse.json(
-      { message: "Onboarding completed successfully." },
+      {
+        message: "Onboarding completed successfully.",
+        matchedSchemes: matchedSchemeIds.length,
+      },
       { status: 200 }
     );
   } catch (error) {

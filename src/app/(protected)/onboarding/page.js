@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Loader2, ArrowRight, ArrowLeft } from "lucide-react";
 
 const INDIAN_STATES = [
@@ -70,9 +71,17 @@ const STEPS = [
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const { data: session, update } = useSession();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Guard: redirect if already onboarded
+  useEffect(() => {
+    if (session?.user?.onboardingCompleted) {
+      router.replace("/dashboard");
+    }
+  }, [session, router]);
 
   const [form, setForm] = useState({
     dateOfBirth: "",
@@ -123,6 +132,9 @@ export default function OnboardingPage() {
         setError(data.error || "Something went wrong.");
         return;
       }
+
+      // Update the JWT session so middleware knows onboarding is done
+      await update({ onboardingCompleted: true });
 
       router.push("/dashboard");
       router.refresh();

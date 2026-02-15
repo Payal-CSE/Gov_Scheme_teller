@@ -20,11 +20,17 @@ const authConfig = {
       return true; // Let middleware handle its own logic
     },
 
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id;
         token.role = user.role;
         token.onboardingCompleted = user.onboardingCompleted;
+      }
+      // Allow client-side session update (e.g., after onboarding)
+      if (trigger === "update" && session) {
+        if (session.onboardingCompleted !== undefined) {
+          token.onboardingCompleted = session.onboardingCompleted;
+        }
       }
       return token;
     },
