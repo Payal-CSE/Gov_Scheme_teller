@@ -1,0 +1,232 @@
+// ============================================================
+// Gov Scheme Teller - Prisma Schema
+// ============================================================
+// Design Decisions:
+//
+// 1. USER MODEL
+//    - Combines auth fields (email, password, role) with profile fields
+//    - Onboarding fields are nullable — populated post-onboarding
+//    - eligibilityVector stored as JSON for ML-readiness
+//    - incomeBracket derived and stored for fast SQL filtering
+//
+// 2. SCHEME MODEL
+//    - Supports Central + State level schemes
+//    - eligibilityRules stored as structured JSON for flexible matching
+//    - applicableStates as JSON array for multi-state scoping
+//    - Status lifecycle: DRAFT -> APPROVED -> ARCHIVED
+//
+// 3. BOOKMARK MODEL
+//    - Simple join table with composite unique constraint
+//    - Prevents duplicate bookmarks at DB level
+//
+// 4. ENUMS
+//    - Role, Gender, Category, OccupationType, SchemeStatus, SchemeLevel
+//    - IndianState covers all 28 states + 8 UTs
+//
+// 5. INDEXES
+//    - User: email (unique), role, state, category, onboardingCompleted
+//    - Scheme: status, level, ministry
+//    - Bookmark: composite (userId, schemeId)
+// ============================================================
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ───────────────────────────────────────────────────
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum Category {
+  GENERAL
+  OBC
+  SC
+  ST
+  EWS
+}
+
+enum OccupationType {
+  SALARIED
+  SELF_EMPLOYED
+  FARMER
+  STUDENT
+  UNEMPLOYED
+  RETIRED
+  OTHER
+}
+
+enum SchemeStatus {
+  DRAFT
+  APPROVED
+  ARCHIVED
+}
+
+enum SchemeLevel {
+  CENTRAL
+  STATE
+}
+
+enum IndianState {
+  // States
+  ANDHRA_PRADESH
+  ARUNACHAL_PRADESH
+  ASSAM
+  BIHAR
+  CHHATTISGARH
+  GOA
+  GUJARAT
+  HARYANA
+  HIMACHAL_PRADESH
+  JHARKHAND
+  KARNATAKA
+  KERALA
+  MADHYA_PRADESH
+  MAHARASHTRA
+  MANIPUR
+  MEGHALAYA
+  MIZORAM
+  NAGALAND
+  ODISHA
+  PUNJAB
+  RAJASTHAN
+  SIKKIM
+  TAMIL_NADU
+  TELANGANA
+  TRIPURA
+  UTTAR_PRADESH
+  UTTARAKHAND
+  WEST_BENGAL
+  // Union Territories
+  ANDAMAN_NICOBAR
+  CHANDIGARH
+  DADRA_NAGAR_HAVELI_DAMAN_DIU
+  DELHI
+  JAMMU_KASHMIR
+  LADAKH
+  LAKSHADWEEP
+  PUDUCHERRY
+}
+
+// ─── User Model ──────────────────────────────────────────────
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  password      String
+  name          String
+  role          Role     @default(USER)
+
+  // Onboarding State
+  onboardingCompleted Boolean @default(false)
+
+  // Personal Identity
+  dateOfBirth   DateTime?
+  gender        Gender?
+  category      Category?
+
+  // Location
+  state         IndianState?
+  district      String?
+  isRural       Boolean?
+
+  // Economic Details
+  annualIncome  Float?
+  incomeBracket String?
+  occupation    OccupationType?
+
+  // Flags
+  isBPL         Boolean   @default(false)
+  isDisabled    Boolean   @default(false)
+  isMinority    Boolean   @default(false)
+
+  // Eligibility Engine
+  eligibilityVector Json?
+
+  // Metadata
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  bookmarks     Bookmark[]
+
+  @@index([role])
+  @@index([state])
+  @@index([category])
+  @@index([onboardingCompleted])
+}
+
+// ─── Scheme Model ────────────────────────────────────────────
+
+model Scheme {
+  id              String       @id @default(cuid())
+  name            String
+  description     String
+  ministry        String
+  level           SchemeLevel
+  status          SchemeStatus @default(DRAFT)
+
+  // Eligibility Rules (structured JSON)
+  // Shape: {
+  //   minAge?: number,
+  //   maxAge?: number,
+  //   genders?: Gender[],
+  //   categories?: Category[],
+  //   maxIncome?: number,
+  //   occupations?: OccupationType[],
+  //   bplOnly?: boolean,
+  //   disabilityOnly?: boolean,
+  //   minorityOnly?: boolean,
+  //   ruralOnly?: boolean,
+  //   urbanOnly?: boolean
+  // }
+  eligibilityRules Json
+
+  // State Scoping (JSON array of IndianState values)
+  // null = applicable to all states (Central schemes)
+  applicableStates Json?
+
+  // Links
+  officialLink    String?
+  documentLink    String?
+
+  // Metadata
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  bookmarks       Bookmark[]
+
+  @@index([status])
+  @@index([level])
+  @@index([ministry])
+}
+
+// ─── Bookmark Model ──────────────────────────────────────────
+
+model Bookmark {
+  id        String   @id @default(cuid())
+  userId    String
+  schemeId  String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scheme    Scheme   @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, schemeId])
+  @@index([userId])
+  @@index([schemeId])
+}
